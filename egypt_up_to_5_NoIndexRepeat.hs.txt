@@ -1,0 +1,90 @@
+import Data.List
+import Data.Ratio
+
+import System.IO
+
+main :: IO ()
+
+main = do
+    hSetBuffering stdout NoBuffering
+
+    putStr "Potential counterexamples for at most 5 subgroups: "
+    displayCounterexamples [2 .. 5]
+
+--  putStr "Potential counterexamples for 6 subgroups: "
+--  displayCounterexamples [6]
+
+--  putStr "Potential counterexamples for 7 subgroups: "
+--  displayCounterexamples [7]
+
+--  putStr "Potential counterexamples for 8 subgroups: "
+--  displayCounterexamples [8]
+
+-- Prints counterexamples for the given list of values of n.
+
+displayCounterexamples :: [Integer] -> IO ()
+
+displayCounterexamples = putStrLn . show . concat . map potentialCounterexamples
+
+-- Returns potential counterexamples to the H-S conjecture with n subgroups.
+-- If the output is empty, then the conjecture is true for that value of n.
+
+potentialCounterexamples :: Integer -> [[Integer]]
+
+potentialCounterexamples = filter (noneFilter disqualifiers) . efo
+
+-- Generates Egyptian fraction decompositions
+
+efo :: Integer -> [[Integer]]
+allDecompositions :: Rational -> [Integer] -> Integer -> [[Integer]]
+recurseDecompositions :: Integer -> Rational -> [Integer] -> Integer -> [[Integer]]
+
+efo = allDecompositions 1 []
+
+allDecompositions 0 _ _ = []
+
+allDecompositions q [] 1
+    | num == 1 = [[denom]]
+    | otherwise = []
+    where
+        num = numerator q
+        denom = denominator q
+
+allDecompositions q (x:xs) 1
+    | num == 1 && denom > x = [denom:x:xs]
+    | otherwise = []
+    where
+        num = numerator q
+        denom = denominator q
+
+allDecompositions q [] n = recurseDecompositions 1 q [] n
+
+allDecompositions q (x:xs) n = recurseDecompositions (x + 1) q (x:xs) n
+
+recurseDecompositions lower q l n = concat $ map
+    (\d -> allDecompositions (q - 1 % d) (d:l) (n - 1))
+    [lower .. floor $ (fromIntegral n) / q]
+
+-- Conditions that forbid a partition from having the given indices
+--containsTwo :: [Integer] -> Bool
+--containsCoprimePair :: [Integer] -> Bool
+--disqualifiers :: [[Integer] -> Bool]
+
+disqualifiers =
+    [
+-- containsTwo, 
+-- containsCoprimePair
+    ]
+
+
+--containsTwo = (== 2) . last
+--containsCoprimePair = any ((== 1) . uncurry gcd) . unorderedPairs
+
+-- Utility functions
+
+unorderedPairs :: [a] -> [(a, a)]
+noneFilter :: [a -> Bool] -> a -> Bool
+
+unorderedPairs l = [(x, y) | (x:ys) <- tails l, y <- ys ]
+
+noneFilter conditions = \x -> not $ any (\f -> f x) conditions
